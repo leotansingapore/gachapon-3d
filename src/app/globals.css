@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+:root {
+  --gold: #C4A24D;
+  --gold-light: #e0c97a;
+  --blue: #355A99;
+  --blue-light: #8ba3c7;
+  --bg-dark: #0a0e1a;
+  --bg-panel: #101525;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-dark);
+  color: white;
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+html, body, #__next {
+  height: 100%;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
