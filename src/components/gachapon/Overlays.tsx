@@ -1,109 +1,150 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
 import type { PrizeSegment, RarityTier } from './types';
 import { getRarity, RARITY_CONFIG } from './types';
 
-// ── Confetti Dot ──
-function ConfettiDot({ delay, color, angle, distance }: { delay: number; color: string; angle: number; distance: number }) {
-  const size = 3 + Math.random() * 7;
-  const isRect = Math.random() > 0.5;
-  return (
-    <motion.div className="absolute"
-      style={{
-        width: isRect ? size * 0.5 : size, height: size,
-        background: color, left: '50%', top: '50%',
-        borderRadius: isRect ? '1px' : '50%',
-      }}
-      initial={{ x: 0, y: 0, opacity: 1, scale: 1, rotate: 0 }}
-      animate={{
-        x: Math.cos(angle) * distance, y: Math.sin(angle) * distance + 50,
-        opacity: 0, scale: 0.15, rotate: Math.random() * 900 - 450,
-      }}
-      transition={{ duration: 0.9 + Math.random() * 0.4, delay, ease: 'easeOut' }}
-    />
-  );
+// ── CSS keyframes (injected once) ──
+const STYLES = `
+@keyframes gach-fadein { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gach-fadeout { from { opacity: 1; } to { opacity: 0; } }
+@keyframes gach-drop {
+  0% { transform: translateY(-300px) scale(0.3) rotate(-200deg); opacity: 1; }
+  25% { transform: translateY(0) scale(1.06) rotate(15deg); }
+  35% { transform: translateY(-30px) scale(0.95) rotate(-8deg); }
+  42% { transform: translateY(0) scale(1.02) rotate(3deg); }
+  48% { transform: translateY(-8px) scale(0.99) rotate(0); }
+  52% { transform: translateY(0) scale(1) rotate(0); }
+  60% { transform: translateY(0) scale(1) rotate(-3deg); }
+  68% { transform: translateY(0) scale(1) rotate(4deg); }
+  76% { transform: translateY(0) scale(1) rotate(-3deg); }
+  90% { transform: translateY(0) scale(1.3) rotate(0); opacity: 0.8; }
+  100% { transform: translateY(0) scale(1.6) rotate(0); opacity: 0; }
+}
+@keyframes gach-crack { 0% { stroke-dashoffset: 1; } 100% { stroke-dashoffset: 0; } }
+@keyframes gach-burst {
+  0% { transform: scale(0); opacity: 0; }
+  85% { transform: scale(0); opacity: 0; }
+  92% { transform: scale(2); opacity: 0.6; }
+  100% { transform: scale(4); opacity: 0; }
+}
+@keyframes gach-confetti {
+  0% { opacity: 1; transform: translate(0,0) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--cx), var(--cy)) scale(0.15) rotate(var(--cr)); }
+}
+@keyframes gach-scalein {
+  0% { transform: scale(0.3); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes gach-slideup {
+  0% { transform: translateY(15px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes gach-pulse-question {
+  0%,100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.08); opacity: 0.7; }
+}
+@keyframes gach-ray {
+  0% { transform: scaleY(0); opacity: 0; }
+  50% { transform: scaleY(1); opacity: 0.5; }
+  100% { transform: scaleY(0.7); opacity: 0.15; }
+}
+@keyframes gach-glow-pulse {
+  0%,100% { opacity: 0.3; } 50% { opacity: 0.6; }
+}
+`;
+
+let stylesInjected = false;
+function injectStyles() {
+  if (stylesInjected || typeof document === 'undefined') return;
+  const el = document.createElement('style');
+  el.textContent = STYLES;
+  document.head.appendChild(el);
+  stylesInjected = true;
 }
 
 // ── Dispensing Overlay ──
 export function DispensingOverlay({ visible, topColor }: { visible: boolean; topColor: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => { injectStyles(); }, []);
+  useEffect(() => {
+    if (visible) setShow(true);
+    else { const t = setTimeout(() => setShow(false), 300); return () => clearTimeout(t); }
+  }, [visible]);
+
+  if (!show) return null;
+
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div className="absolute inset-0 z-40 flex items-center justify-center"
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.3 } }}>
-          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 45%, rgba(17,24,39,0.8), rgba(0,0,0,0.92))' }} />
+    <div className="absolute inset-0 z-40 flex items-center justify-center"
+      style={{ animation: visible ? 'gach-fadein 0.3s' : 'gach-fadeout 0.3s forwards' }}>
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 45%, rgba(17,24,39,0.8), rgba(0,0,0,0.92))' }} />
 
-          <motion.div className="relative z-10" style={{ width: 140, height: 140 }}
-            animate={{
-              y: [-300, 0, -30, 0, -8, 0, 0, 0, 0, 0, 0],
-              scale: [0.3, 1.06, 0.95, 1.02, 0.99, 1, 1, 1, 1, 1.3, 1.6],
-              rotate: [-200, 15, -8, 3, 0, 0, -3, 4, -3, 0, 0],
-              opacity: [1, 1, 1, 1, 1, 1, 1, 1, 1, 0.8, 0],
-            }}
-            transition={{ duration: 1.5, times: [0, 0.25, 0.35, 0.42, 0.48, 0.52, 0.6, 0.68, 0.76, 0.9, 1], ease: 'easeOut' }}>
-            <div className="w-full h-full rounded-full" style={{
-              background: `radial-gradient(circle at 35% 30%, ${topColor}ff, ${topColor}cc, ${topColor}88)`,
-              boxShadow: `0 8px 30px ${topColor}50, inset 0 -4px 12px rgba(0,0,0,0.2), inset 0 2px 6px rgba(255,255,255,0.2)`,
-            }}>
-              <div className="absolute top-4 left-7 w-10 h-7 rounded-full bg-white/30" style={{ filter: 'blur(1px)' }} />
-              <div className="absolute top-3 left-9 w-4 h-2.5 rounded-full bg-white/50" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-3xl font-black text-white/40" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>?</span>
-              </div>
-            </div>
-          </motion.div>
+      {/* Capsule ball */}
+      <div className="relative z-10" style={{
+        width: 140, height: 140,
+        animation: 'gach-drop 1.5s ease-out forwards',
+      }}>
+        <div className="w-full h-full rounded-full" style={{
+          background: `radial-gradient(circle at 35% 30%, ${topColor}ff, ${topColor}cc, ${topColor}88)`,
+          boxShadow: `0 8px 30px ${topColor}50, inset 0 -4px 12px rgba(0,0,0,0.2), inset 0 2px 6px rgba(255,255,255,0.2)`,
+        }}>
+          <div className="absolute top-4 left-7 w-10 h-7 rounded-full bg-white/30" style={{ filter: 'blur(1px)' }} />
+          <div className="absolute top-3 left-9 w-4 h-2.5 rounded-full bg-white/50" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-3xl font-black text-white/40" style={{
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              animation: 'gach-pulse-question 1.2s infinite',
+            }}>?</span>
+          </div>
+        </div>
+      </div>
 
-          {/* Crack lines */}
-          <motion.svg className="absolute z-20" style={{ width: 160, height: 160, left: '50%', top: '50%', marginLeft: -80, marginTop: -80 }}
-            viewBox="0 0 160 160"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0, 0, 0, 0, 0, 1, 1, 1, 0] }}
-            transition={{ duration: 1.5, times: [0, 0.2, 0.3, 0.4, 0.5, 0.55, 0.62, 0.78, 0.88, 1] }}>
-            <motion.path d="M 15 80 L 35 70 L 50 85 L 68 65 L 80 78 L 92 67 L 110 80 L 125 72 L 145 80"
-              fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: [0, 0, 0, 0, 0, 0, 1, 1, 1, 1] }}
-              transition={{ duration: 1.5, times: [0, 0.2, 0.3, 0.4, 0.5, 0.55, 0.62, 0.78, 0.88, 1] }} />
-            <motion.path d="M 68 65 L 62 48 L 68 38" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" opacity={0.6}
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: [0, 0, 0, 0, 0, 0, 0, 1, 1, 1] }}
-              transition={{ duration: 1.5, times: [0, 0.2, 0.3, 0.4, 0.5, 0.55, 0.65, 0.75, 0.88, 1] }} />
-            <motion.path d="M 92 67 L 98 50 L 92 42" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" opacity={0.5}
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: [0, 0, 0, 0, 0, 0, 0, 0, 1, 1] }}
-              transition={{ duration: 1.5, times: [0, 0.2, 0.3, 0.4, 0.5, 0.55, 0.65, 0.72, 0.82, 1] }} />
-          </motion.svg>
+      {/* Crack lines SVG */}
+      <svg className="absolute z-20" style={{ width: 160, height: 160, left: '50%', top: '50%', marginLeft: -80, marginTop: -80 }}
+        viewBox="0 0 160 160">
+        <path d="M 15 80 L 35 70 L 50 85 L 68 65 L 80 78 L 92 67 L 110 80 L 125 72 L 145 80"
+          fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"
+          strokeDasharray="1" strokeDashoffset="1"
+          style={{ animation: 'gach-crack 0.4s 0.9s forwards' }} />
+        <path d="M 68 65 L 62 48 L 68 38" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" opacity={0.6}
+          strokeDasharray="1" strokeDashoffset="1"
+          style={{ animation: 'gach-crack 0.3s 1.1s forwards' }} />
+        <path d="M 92 67 L 98 50 L 92 42" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" opacity={0.5}
+          strokeDasharray="1" strokeDashoffset="1"
+          style={{ animation: 'gach-crack 0.3s 1.15s forwards' }} />
+      </svg>
 
-          {/* Light burst */}
-          <motion.div className="absolute z-15 rounded-full"
-            style={{ width: 200, height: 200, left: '50%', top: '50%', marginLeft: -100, marginTop: -100 }}
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: [0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4], opacity: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.6, 0] }}
-            transition={{ duration: 1.5, times: [0, 0.2, 0.3, 0.4, 0.5, 0.55, 0.65, 0.75, 0.85, 0.92, 1] }}>
-            <div className="w-full h-full rounded-full" style={{ background: `radial-gradient(circle, ${topColor}90, ${topColor}30, transparent 60%)` }} />
-          </motion.div>
+      {/* Light burst */}
+      <div className="absolute z-10 rounded-full"
+        style={{
+          width: 200, height: 200, left: '50%', top: '50%', marginLeft: -100, marginTop: -100,
+          background: `radial-gradient(circle, ${topColor}90, ${topColor}30, transparent 60%)`,
+          animation: 'gach-burst 1.5s ease-out forwards',
+        }} />
 
-          <motion.div className="absolute z-0 rounded-full"
-            style={{ width: 120, height: 16, background: 'radial-gradient(ellipse, rgba(0,0,0,0.35), transparent 70%)', top: '56%', left: '50%', marginLeft: -60 }}
-            initial={{ scale: 0.3, opacity: 0 }}
-            animate={{ scale: [0.3, 1, 1, 1, 1, 1, 1, 1, 1, 0.5, 0], opacity: [0, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.3, 0] }}
-            transition={{ duration: 1.5, times: [0, 0.25, 0.3, 0.4, 0.5, 0.55, 0.65, 0.75, 0.85, 0.92, 1] }} />
-        </motion.div>
-      )}
-    </AnimatePresence>
+      {/* Shadow */}
+      <div className="absolute z-0 rounded-full"
+        style={{ width: 120, height: 16, background: 'radial-gradient(ellipse, rgba(0,0,0,0.35), transparent 70%)', top: '56%', left: '50%', marginLeft: -60 }} />
+    </div>
   );
 }
 
-// ── Prize Reveal (rarity-scaled) ──
+// ── Prize Reveal (rarity-scaled, CSS only) ──
 export function PrizeRevealOverlay({ visible, prize, onCollect }: {
   visible: boolean; prize: PrizeSegment | null; onCollect: () => void;
 }) {
-  if (!prize) return null;
+  const [show, setShow] = useState(false);
+  useEffect(() => { injectStyles(); }, []);
+  useEffect(() => {
+    if (visible) setShow(true);
+    else { const t = setTimeout(() => setShow(false), 300); return () => clearTimeout(t); }
+  }, [visible]);
+
+  if (!show || !prize) return null;
   const rarity = getRarity(prize.creditValue);
   const config = RARITY_CONFIG[rarity];
 
-  // Scale confetti colors to rarity
   const baseColors = ['#ef4444', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#ffffff', '#fcd34d'];
   const confettiColors = rarity === 'legendary'
     ? ['#fbbf24', '#f59e0b', '#fcd34d', '#ffffff', '#fef08a', '#f59e0b', '#fbbf24', '#ffffff']
@@ -112,112 +153,108 @@ export function PrizeRevealOverlay({ visible, prize, onCollect }: {
     : baseColors;
 
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div className="absolute inset-0 flex items-center justify-center z-50"
-          style={{ background: `radial-gradient(ellipse at 50% 40%, rgba(17,24,39,0.92), rgba(0,0,0,0.97))` }}
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <div className="absolute inset-0 flex items-center justify-center z-50"
+      style={{
+        background: 'radial-gradient(ellipse at 50% 40%, rgba(17,24,39,0.92), rgba(0,0,0,0.97))',
+        animation: visible ? 'gach-fadein 0.3s' : 'gach-fadeout 0.3s forwards',
+      }}>
 
-          {/* Rarity glow behind everything */}
-          {(rarity === 'epic' || rarity === 'legendary') && (
-            <motion.div className="absolute inset-0 pointer-events-none"
-              style={{ background: `radial-gradient(circle at 50% 45%, ${config.glowColor}15, transparent 50%)` }}
-              animate={{ opacity: [0.3, 0.6, 0.3] }}
-              transition={{ duration: 2, repeat: Infinity }} />
-          )}
-
-          {/* Confetti - count scales with rarity */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(config.confettiCount)].map((_, i) => (
-              <ConfettiDot key={i} delay={0.03 + Math.random() * 0.2}
-                color={confettiColors[i % confettiColors.length]}
-                angle={(i / config.confettiCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4}
-                distance={80 + Math.random() * (rarity === 'legendary' ? 220 : rarity === 'epic' ? 180 : 140)} />
-            ))}
-          </div>
-
-          {/* Light rays for epic/legendary */}
-          {(rarity === 'epic' || rarity === 'legendary') && (
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              {[...Array(rarity === 'legendary' ? 12 : 6)].map((_, i) => (
-                <motion.div key={i} className="absolute"
-                  style={{
-                    left: '50%', top: '50%', width: 3, height: rarity === 'legendary' ? 400 : 250,
-                    background: `linear-gradient(0deg, ${config.glowColor}40, transparent)`,
-                    transformOrigin: 'center top',
-                    rotate: `${i * (rarity === 'legendary' ? 30 : 60)}deg`,
-                    marginLeft: -1.5,
-                  }}
-                  initial={{ scaleY: 0, opacity: 0 }}
-                  animate={{ scaleY: [0, 1, 0.7], opacity: [0, 0.5, 0.15] }}
-                  transition={{ duration: 0.8, delay: 0.1 + i * 0.03 }}
-                />
-              ))}
-            </div>
-          )}
-
-          <motion.div className="text-center relative z-10"
-            initial={{ scale: 0.3, opacity: 0, y: 30 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 14 }}>
-
-            {/* Rarity label (epic/legendary only) */}
-            {(rarity === 'epic' || rarity === 'legendary') && (
-              <motion.div className="mb-2 text-sm font-bold tracking-[0.3em] uppercase"
-                style={{ color: config.color }}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}>
-                {config.label}
-              </motion.div>
-            )}
-
-            {/* Emoji - bigger for higher rarity */}
-            <motion.div className={rarity === 'legendary' ? 'text-7xl mb-4' : 'text-6xl mb-4'}
-              initial={{ scale: 0, rotate: -20 }}
-              animate={{ scale: [0, 1.3, 1], rotate: [null, 10, 0] }}
-              transition={{ delay: 0.1, duration: 0.5 }}>
-              {prize.emoji}
-            </motion.div>
-
-            {/* Credit value - color matches rarity */}
-            <motion.div
-              className={rarity === 'legendary' ? 'text-9xl font-black mb-3' : 'text-8xl font-black mb-3'}
-              style={{
-                color: config.color,
-                textShadow: `0 0 ${rarity === 'legendary' ? '80px' : '40px'} ${config.glowColor}50, 0 4px 12px rgba(0,0,0,0.5)`,
-              }}
-              initial={{ scale: 0 }}
-              animate={{ scale: [0, 1.15, 1] }}
-              transition={{ delay: 0.2, duration: 0.4 }}>
-              +{prize.creditValue}
-            </motion.div>
-
-            <motion.p className="text-xl font-semibold mb-1"
-              style={{ color: `${config.color}e0` }}
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-              Activity Credits!
-            </motion.p>
-
-            <motion.p className="text-sm mb-8" style={{ color: 'rgba(255,255,255,0.3)' }}
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-              {prize.label}
-            </motion.p>
-
-            <motion.button onClick={onCollect}
-              className="px-10 py-3.5 rounded-full transition-all duration-200 hover:brightness-125 active:scale-95"
-              style={{
-                background: `linear-gradient(135deg, ${config.color}30, ${config.color}10)`,
-                border: `1px solid ${config.color}60`, color: config.color,
-                fontSize: '1rem', fontWeight: 700,
-              }}
-              initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-              Collect
-            </motion.button>
-          </motion.div>
-        </motion.div>
+      {/* Rarity ambient glow */}
+      {(rarity === 'epic' || rarity === 'legendary') && (
+        <div className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle at 50% 45%, ${config.glowColor}15, transparent 50%)`,
+            animation: 'gach-glow-pulse 2s infinite',
+          }} />
       )}
-    </AnimatePresence>
+
+      {/* Confetti */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(config.confettiCount)].map((_, i) => {
+          const angle = (i / config.confettiCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+          const dist = 80 + Math.random() * (rarity === 'legendary' ? 220 : rarity === 'epic' ? 180 : 140);
+          const size = 3 + Math.random() * 7;
+          const isRect = Math.random() > 0.5;
+          return (
+            <div key={i} className="absolute" style={{
+              width: isRect ? size * 0.5 : size, height: size,
+              background: confettiColors[i % confettiColors.length],
+              left: '50%', top: '50%',
+              borderRadius: isRect ? '1px' : '50%',
+              '--cx': `${Math.cos(angle) * dist}px`,
+              '--cy': `${Math.sin(angle) * dist + 50}px`,
+              '--cr': `${Math.random() * 900 - 450}deg`,
+              animation: `gach-confetti ${0.9 + Math.random() * 0.4}s ${0.03 + Math.random() * 0.2}s ease-out forwards`,
+            } as React.CSSProperties} />
+          );
+        })}
+      </div>
+
+      {/* Light rays for epic/legendary */}
+      {(rarity === 'epic' || rarity === 'legendary') && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[...Array(rarity === 'legendary' ? 12 : 6)].map((_, i) => (
+            <div key={i} className="absolute" style={{
+              left: '50%', top: '50%', width: 3,
+              height: rarity === 'legendary' ? 400 : 250,
+              background: `linear-gradient(0deg, ${config.glowColor}40, transparent)`,
+              transformOrigin: 'center top',
+              transform: `rotate(${i * (rarity === 'legendary' ? 30 : 60)}deg)`,
+              marginLeft: -1.5,
+              animation: `gach-ray 0.8s ${0.1 + i * 0.03}s ease-out forwards`,
+              opacity: 0,
+            }} />
+          ))}
+        </div>
+      )}
+
+      <div className="text-center relative z-10" style={{ animation: 'gach-scalein 0.4s ease-out' }}>
+        {/* Rarity label */}
+        {(rarity === 'epic' || rarity === 'legendary') && (
+          <div className="mb-2 text-sm font-bold tracking-[0.3em] uppercase"
+            style={{ color: config.color, animation: 'gach-slideup 0.3s ease-out' }}>
+            {config.label}
+          </div>
+        )}
+
+        {/* Emoji */}
+        <div className={rarity === 'legendary' ? 'text-7xl mb-4' : 'text-6xl mb-4'}
+          style={{ animation: 'gach-scalein 0.5s 0.1s ease-out both' }}>
+          {prize.emoji}
+        </div>
+
+        {/* Credits */}
+        <div className={rarity === 'legendary' ? 'text-9xl font-black mb-3' : 'text-8xl font-black mb-3'}
+          style={{
+            color: config.color,
+            textShadow: `0 0 ${rarity === 'legendary' ? '80px' : '40px'} ${config.glowColor}50, 0 4px 12px rgba(0,0,0,0.5)`,
+            animation: 'gach-scalein 0.4s 0.2s ease-out both',
+          }}>
+          +{prize.creditValue}
+        </div>
+
+        <p className="text-xl font-semibold mb-1"
+          style={{ color: `${config.color}e0`, animation: 'gach-slideup 0.3s 0.35s ease-out both' }}>
+          Activity Credits!
+        </p>
+
+        <p className="text-sm mb-8"
+          style={{ color: 'rgba(255,255,255,0.3)', animation: 'gach-slideup 0.3s 0.4s ease-out both' }}>
+          {prize.label}
+        </p>
+
+        <button onClick={onCollect}
+          className="px-10 py-3.5 rounded-full transition-all duration-200 hover:brightness-125 active:scale-95"
+          style={{
+            background: `linear-gradient(135deg, ${config.color}30, ${config.color}10)`,
+            border: `1px solid ${config.color}60`, color: config.color,
+            fontSize: '1rem', fontWeight: 700,
+            animation: 'gach-slideup 0.3s 0.5s ease-out both',
+          }}>
+          Collect
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -234,8 +271,7 @@ export function PullHistory({ history, visible }: {
         background: 'rgba(17,24,39,0.92)',
         border: '1px solid rgba(255,255,255,0.06)',
         backdropFilter: 'blur(12px)',
-        width: 200,
-        maxHeight: 320,
+        width: 200, maxHeight: 320,
       }}>
         <div className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <span className="text-[10px] tracking-[0.1em] uppercase" style={{ color: 'rgba(255,255,255,0.35)' }}>
@@ -244,33 +280,26 @@ export function PullHistory({ history, visible }: {
         </div>
         <div className="overflow-y-auto" style={{ maxHeight: 270 }}>
           {history.map((entry, i) => {
-            const config = RARITY_CONFIG[entry.rarity];
-            const timeAgo = getTimeAgo(entry.timestamp);
+            const cfg = RARITY_CONFIG[entry.rarity];
+            const diff = Date.now() - entry.timestamp;
+            const time = diff < 60000 ? 'just now' : diff < 3600000 ? `${Math.floor(diff / 60000)}m ago` : `${Math.floor(diff / 3600000)}h ago`;
             return (
-              <div key={i} className="flex items-center gap-2 px-3 py-1.5"
-                style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                {/* Capsule dot */}
+              <div key={i} className="flex items-center gap-2 px-3 py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                 <div className="w-5 h-5 rounded-full flex-shrink-0" style={{
                   background: `radial-gradient(circle at 35% 35%, ${entry.topColor}, ${entry.topColor}aa)`,
-                  boxShadow: entry.rarity !== 'common' ? `0 0 6px ${config.glowColor}40` : 'none',
+                  boxShadow: entry.rarity !== 'common' ? `0 0 6px ${cfg.glowColor}40` : 'none',
                 }} />
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
-                    <span className="text-xs font-bold" style={{ color: config.color }}>
-                      +{entry.segment.creditValue}
-                    </span>
+                    <span className="text-xs font-bold" style={{ color: cfg.color }}>+{entry.segment.creditValue}</span>
                     <span className="text-[10px]">{entry.segment.emoji}</span>
                     {entry.rarity !== 'common' && (
-                      <span className="text-[8px] px-1 rounded" style={{
-                        background: `${config.color}20`,
-                        color: config.color,
-                      }}>
+                      <span className="text-[8px] px-1 rounded" style={{ background: `${cfg.color}20`, color: cfg.color }}>
                         {entry.rarity === 'legendary' ? 'LEG' : entry.rarity === 'epic' ? 'EPIC' : 'RARE'}
                       </span>
                     )}
                   </div>
-                  <span className="text-[9px]" style={{ color: 'rgba(255,255,255,0.2)' }}>{timeAgo}</span>
+                  <span className="text-[9px]" style={{ color: 'rgba(255,255,255,0.2)' }}>{time}</span>
                 </div>
               </div>
             );
@@ -279,11 +308,4 @@ export function PullHistory({ history, visible }: {
       </div>
     </div>
   );
-}
-
-function getTimeAgo(timestamp: number): string {
-  const diff = Date.now() - timestamp;
-  if (diff < 60000) return 'just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  return `${Math.floor(diff / 3600000)}h ago`;
 }
