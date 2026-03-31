@@ -5,7 +5,7 @@ import { useFrame, useThree, extend } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls as ThreeOrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Ball } from './types';
-import { simulate, applyOrbitForce } from './physics';
+import { simulate, applyOrbitForce, animateDispenseBall } from './physics';
 
 extend({ OrbitControls: ThreeOrbitControls });
 
@@ -83,8 +83,19 @@ function CapsuleMesh({ ball }: { ball: Ball }) {
 }
 
 // ── BallsController ──
-function BallsController({ balls, shaking, tilt }: { balls: Ball[]; shaking: boolean; tilt: { x: number; z: number } }) {
-  useFrame((_, delta) => { simulate(balls, shaking, delta, tilt); });
+function BallsController({ balls, shaking, tilt, dispensingBallIdx, dispenseStartTime }: {
+  balls: Ball[]; shaking: boolean; tilt: { x: number; z: number };
+  dispensingBallIdx: number | null; dispenseStartTime: number;
+}) {
+  useFrame((_, delta) => {
+    simulate(balls, shaking, delta, tilt);
+    // Animate the dispensing ball separately
+    if (dispensingBallIdx !== null && dispensingBallIdx < balls.length) {
+      const elapsed = (Date.now() - dispenseStartTime) / 1400; // 1.4s total travel
+      const progress = Math.min(elapsed, 1);
+      animateDispenseBall(balls[dispensingBallIdx], progress);
+    }
+  });
   return <>{balls.map((ball, i) => <CapsuleMesh key={i} ball={ball} />)}</>;
 }
 
@@ -253,9 +264,10 @@ function Controls() {
 }
 
 // ── Main Scene (no shadows for faster render) ──
-export function GachaponScene3D({ balls, shaking, phase, onTurnKnob, tilt, label, priceLabel }: {
+export function GachaponScene3D({ balls, shaking, phase, onTurnKnob, tilt, label, priceLabel, dispensingBallIdx, dispenseStartTime }: {
   balls: Ball[]; shaking: boolean; phase: string; onTurnKnob: () => void;
   tilt: { x: number; z: number }; label: string; priceLabel: string;
+  dispensingBallIdx: number | null; dispenseStartTime: number;
 }) {
   const machineRef = useRef<THREE.Group>(null);
   const prevAzimuth = useRef(0);
@@ -291,7 +303,8 @@ export function GachaponScene3D({ balls, shaking, phase, onTurnKnob, tilt, label
         <MachineBody label={label} priceLabel={priceLabel} />
         <GlassDome />
         <TopCap />
-        <BallsController balls={balls} shaking={shaking} tilt={tilt} />
+        <BallsController balls={balls} shaking={shaking} tilt={tilt}
+          dispensingBallIdx={dispensingBallIdx} dispenseStartTime={dispenseStartTime} />
         <Knob spinning={phase === 'knob-turning'} canDispense={phase === 'idle'} onTurn={onTurnKnob} />
       </group>
 

@@ -53,6 +53,46 @@ export function applyBurst(balls: Ball[]) {
   }
 }
 
+// Pick a random ball and start pulling it toward the chute
+export function startDispenseBall(balls: Ball[]): number {
+  // Pick a random visible ball
+  const idx = Math.floor(Math.random() * balls.length);
+  return idx;
+}
+
+// Animate the dispensing ball: pull toward center -> drop through chute
+// Returns progress 0-1 (1 = done, ball is in tray)
+export function animateDispenseBall(ball: Ball, progress: number) {
+  // Phase 1 (0-0.4): Ball gets pulled toward center funnel
+  // Phase 2 (0.4-0.7): Ball drops straight down through body
+  // Phase 3 (0.7-1.0): Ball rolls forward into tray
+
+  if (progress < 0.4) {
+    const p = progress / 0.4; // 0-1 within this sub-phase
+    const ease = 1 - Math.pow(1 - p, 2);
+    ball.position.x *= (1 - ease * 0.95);
+    ball.position.z *= (1 - ease * 0.95);
+    ball.position.y = FLOOR_Y + 0.15 - ease * 0.1;
+    ball.velocity.x = 0; ball.velocity.y = 0; ball.velocity.z = 0;
+    ball.angularVel = p * 8;
+  } else if (progress < 0.7) {
+    const p = (progress - 0.4) / 0.3;
+    const ease = p * p; // accelerate downward
+    ball.position.x = 0;
+    ball.position.z = 0;
+    ball.position.y = FLOOR_Y - ease * 1.2; // drops below floor through body
+    ball.angularVel = 10;
+  } else {
+    const p = (progress - 0.7) / 0.3;
+    const ease = 1 - Math.pow(1 - p, 2);
+    ball.position.x = 0;
+    ball.position.z = ease * 1.3; // rolls forward into tray
+    ball.position.y = -0.62 + Math.sin(p * Math.PI) * 0.05; // slight arc
+    ball.angularVel = (1 - p) * 12;
+  }
+  ball.angle += ball.angularVel * 0.016;
+}
+
 export function applyOrbitForce(balls: Ball[], azimuthDelta: number) {
   for (const ball of balls) {
     ball.velocity.x += azimuthDelta * 0.8;

@@ -14,7 +14,7 @@ function SceneReadyDetector({ onReady }: { onReady: () => void }) {
 import { GachaponScene3D } from './Machine3D';
 import { DispensingOverlay, PrizeRevealOverlay, PullHistory } from './Overlays';
 import { playSound, vibrate, setMuted } from './sound';
-import { createBalls, applyBurst } from './physics';
+import { createBalls, applyBurst, startDispenseBall, animateDispenseBall } from './physics';
 import { pickPrize, getRarity, DEFAULT_SEGMENTS, DEFAULT_PALETTES, type PrizeSegment, type Ball, type SpinResult } from './types';
 
 // ── Error Boundary ──
@@ -100,6 +100,8 @@ export default function GachaponMachine({
   const [history, setHistory] = useState<SpinResult[]>([]);
   const [showHistory, setShowHistory] = useState(true);
   const [sceneReady, setSceneReady] = useState(false);
+  const [dispensingBallIdx, setDispensingBallIdx] = useState<number | null>(null);
+  const dispenseStartTime = useRef(0);
 
   const ballsRef = useRef<Ball[]>(createBalls(numBalls, palettes, segments.length));
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -183,19 +185,32 @@ export default function GachaponMachine({
     playSound('click');
     vibrate([30, 50, 30, 50, 60]);
 
+    // Phase 2: Ball gets pulled through the machine (3D animation)
     setTimeout(() => {
       setShaking(false);
+      const idx = startDispenseBall(ballsRef.current);
+      setDispensingBallIdx(idx);
+      dispenseStartTime.current = Date.now();
+      setPhase('ball-travel');
       playSound('whoosh');
-      setPhase('dispensing');
       vibrate(80);
     }, 800);
 
+    // Phase 3: Ball lands in tray, show 2D capsule crack overlay
+    setTimeout(() => {
+      setDispensingBallIdx(null);
+      playSound('clack');
+      setPhase('dispensing');
+      vibrate([40, 20, 60]);
+    }, 2200);
+
+    // Phase 4: Prize reveal
     setTimeout(() => {
       playSound('ding');
       setPhase('reveal');
       setShowCollect(true);
       vibrate([50, 100, 50]);
-    }, 2100);
+    }, 3500);
   }, [phase, canDispense, segments, palettes]);
 
   const handleCollect = useCallback(() => {
@@ -236,6 +251,7 @@ export default function GachaponMachine({
             <GachaponScene3D
               balls={ballsRef.current} shaking={shaking} phase={phase}
               onTurnKnob={handleDispense} tilt={tilt} label={label} priceLabel={priceLabel}
+              dispensingBallIdx={dispensingBallIdx} dispenseStartTime={dispenseStartTime.current}
             />
             <SceneReadyDetector onReady={() => setSceneReady(true)} />
           </Suspense>
@@ -295,8 +311,11 @@ export default function GachaponMachine({
         {phase === 'knob-turning' && (
           <p className="text-sm animate-pulse" style={{ color: 'rgba(251,191,36,0.7)' }}>Turning knob...</p>
         )}
+        {phase === 'ball-travel' && (
+          <p className="text-sm" style={{ color: 'rgba(251,191,36,0.5)' }}>Capsule dispensing...</p>
+        )}
         {phase === 'dispensing' && (
-          <p className="text-sm animate-pulse" style={{ color: 'rgba(251,191,36,0.7)' }}>Dispensing...</p>
+          <p className="text-sm animate-pulse" style={{ color: 'rgba(251,191,36,0.7)' }}>Opening capsule...</p>
         )}
       </div>
 
