@@ -9,13 +9,13 @@ import { simulate, applyOrbitForce, animateDispenseBall } from './physics';
 
 extend({ OrbitControls: ThreeOrbitControls });
 
-// Shared materials (created once, reused across all meshes)
-const chromeMat = new THREE.MeshStandardMaterial({ color: '#d4d4d8', metalness: 0.9, roughness: 0.1 });
-const darkMat = new THREE.MeshStandardMaterial({ color: '#1e1e2e', metalness: 0.4, roughness: 0.5 });
-const redMat = new THREE.MeshStandardMaterial({ color: '#dc2626', roughness: 0.35 });
-const darkRedMat = new THREE.MeshStandardMaterial({ color: '#991b1b', roughness: 0.5 });
-const blackMat = new THREE.MeshStandardMaterial({ color: '#0a0a0a', roughness: 0.9 });
-const floorMat = new THREE.MeshStandardMaterial({ color: '#111827' });
+// Shared materials - glossy plastic look
+const chromeMat = new THREE.MeshStandardMaterial({ color: '#e0e0e8', metalness: 0.95, roughness: 0.05 });
+const darkMat = new THREE.MeshStandardMaterial({ color: '#1a1a2e', metalness: 0.3, roughness: 0.4 });
+const redMat = new THREE.MeshStandardMaterial({ color: '#e02020', roughness: 0.25, metalness: 0.05 });
+const darkRedMat = new THREE.MeshStandardMaterial({ color: '#8b1a1a', roughness: 0.4 });
+const blackMat = new THREE.MeshStandardMaterial({ color: '#080808', roughness: 0.85 });
+const floorMat = new THREE.MeshStandardMaterial({ color: '#0d1117', metalness: 0.3, roughness: 0.6 });
 
 // Shared geometries
 const capsuleGeo = new THREE.SphereGeometry(1, 12, 12); // Unit sphere, scaled per ball
@@ -53,7 +53,7 @@ function InstancedCapsules({ balls }: { balls: Ball[] }) {
 const materialCache = new Map<string, THREE.MeshStandardMaterial>();
 function getCachedMaterial(color: string): THREE.MeshStandardMaterial {
   if (!materialCache.has(color)) {
-    materialCache.set(color, new THREE.MeshStandardMaterial({ color, roughness: 0.25 }));
+    materialCache.set(color, new THREE.MeshStandardMaterial({ color, roughness: 0.15, metalness: 0.05 }));
   }
   return materialCache.get(color)!;
 }
@@ -99,21 +99,46 @@ function BallsController({ balls, shaking, tilt, dispensingBallIdx, dispenseStar
   return <>{balls.map((ball, i) => <CapsuleMesh key={i} ball={ball} />)}</>;
 }
 
-// ── Glass Dome ──
-const domeGeo = new THREE.SphereGeometry(1.4, 24, 24, 0, Math.PI * 2, 0, Math.PI * 0.5);
+// ── Glass Dome (much more visible) ──
+const domeGeo = new THREE.SphereGeometry(1.4, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.5);
 const domeMat = new THREE.MeshStandardMaterial({
-  color: '#e8f0ff', roughness: 0.0, transparent: true, opacity: 0.1,
-  side: THREE.DoubleSide, depthWrite: false,
+  color: '#d8e8ff', roughness: 0.0, transparent: true, opacity: 0.15,
+  side: THREE.DoubleSide, depthWrite: false, metalness: 0.1,
 });
+// Inner dome (catches light from inside, makes glass edge visible)
+const domeInnerGeo = new THREE.SphereGeometry(1.38, 24, 24, 0, Math.PI * 2, 0, Math.PI * 0.5);
+const domeInnerMat = new THREE.MeshBasicMaterial({
+  color: '#a0c0e0', transparent: true, opacity: 0.04, side: THREE.BackSide, depthWrite: false,
+});
+const domeRimGeo = new THREE.TorusGeometry(1.39, 0.02, 8, 48);
+const domeRimMat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.12 });
 
 function GlassDome() {
   return (
     <group position={[0, 0.48, 0]}>
+      {/* Outer dome shell */}
       <mesh geometry={domeGeo} material={domeMat} renderOrder={1} />
-      {/* Single specular streak */}
-      <mesh position={[0.5, 0.35, 0.9]} rotation={[0.1, 0.4, 0.15]}>
-        <planeGeometry args={[0.06, 0.7]} />
-        <meshBasicMaterial color="white" opacity={0.12} transparent side={THREE.DoubleSide} depthWrite={false} />
+      {/* Inner dome (subtle backface glow) */}
+      <mesh geometry={domeInnerGeo} material={domeInnerMat} renderOrder={0} />
+      {/* Bright rim ring at base of dome */}
+      <mesh geometry={domeRimGeo} material={domeRimMat} rotation={[Math.PI / 2, 0, 0]} />
+      {/* Specular streaks (curved glass reflections) */}
+      <mesh position={[0.45, 0.4, 0.95]} rotation={[0.05, 0.35, 0.12]}>
+        <planeGeometry args={[0.05, 0.8]} />
+        <meshBasicMaterial color="white" opacity={0.18} transparent side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      <mesh position={[0.55, 0.2, 0.82]} rotation={[0, 0.45, 0.08]}>
+        <planeGeometry args={[0.03, 0.5]} />
+        <meshBasicMaterial color="white" opacity={0.1} transparent side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      <mesh position={[-0.55, 0.35, 0.7]} rotation={[0, -0.25, -0.1]}>
+        <planeGeometry args={[0.03, 0.55]} />
+        <meshBasicMaterial color="white" opacity={0.07} transparent side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      {/* Top highlight arc */}
+      <mesh position={[0.1, 0.7, 0.4]} rotation={[0.6, 0, 0.1]}>
+        <planeGeometry args={[0.4, 0.04]} />
+        <meshBasicMaterial color="white" opacity={0.08} transparent side={THREE.DoubleSide} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -127,13 +152,13 @@ function CanvasLabel({ text, width, height, fontSize, color, bgColor, position }
   const texture = useMemo(() => {
     if (typeof document === 'undefined') return null;
     const canvas = document.createElement('canvas');
-    canvas.width = width * 3;
-    canvas.height = height * 3;
+    canvas.width = width * 5;
+    canvas.height = height * 5;
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = color;
-    ctx.font = `bold ${fontSize * 3}px system-ui, sans-serif`;
+    ctx.font = `bold ${fontSize * 5}px system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(text, canvas.width / 2, canvas.height / 2);
@@ -290,12 +315,22 @@ export function GachaponScene3D({ balls, shaking, phase, onTurnKnob, tilt, label
 
   return (
     <>
-      {/* Simplified lighting (no shadows) */}
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[4, 6, 5]} intensity={1.2} color="#fff5e6" />
-      <pointLight position={[-3, 4, 2]} intensity={0.4} color="#93c5fd" />
-      <pointLight position={[2, 1, 3]} intensity={0.3} color="#fde68a" />
-      <hemisphereLight args={['#b0c4de', '#2a2a3a', 0.6]} />
+      {/* Lighting - studio setup with rim lights */}
+      <ambientLight intensity={0.5} />
+      {/* Key light (warm, from top-right) */}
+      <directionalLight position={[4, 6, 5]} intensity={1.5} color="#fff0e0" />
+      {/* Fill light (cool, from left) */}
+      <pointLight position={[-4, 3, 2]} intensity={0.5} color="#a0c0f0" />
+      {/* Accent light (warm, from right) */}
+      <pointLight position={[3, 1, 3]} intensity={0.4} color="#fde68a" />
+      {/* Rim light (behind, separates machine from background) */}
+      <pointLight position={[0, 2, -3]} intensity={0.8} color="#4060a0" />
+      {/* Dome interior light (makes capsules visible inside) */}
+      <pointLight position={[0, 1.0, 0]} intensity={0.6} color="#ffffff" distance={2.5} />
+      {/* Under-light for dramatic effect */}
+      <pointLight position={[0, -0.5, 2]} intensity={0.15} color="#ff8080" distance={3} />
+      {/* Sky/ground color */}
+      <hemisphereLight args={['#c0d4e8', '#1a1a2e', 0.5]} />
 
       <Controls />
 
@@ -308,8 +343,14 @@ export function GachaponScene3D({ balls, shaking, phase, onTurnKnob, tilt, label
         <Knob spinning={phase === 'knob-turning'} canDispense={phase === 'idle'} onTurn={onTurnKnob} />
       </group>
 
+      {/* Floor with subtle gradient */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.85, 0]} material={floorMat}>
         <planeGeometry args={[20, 20]} />
+      </mesh>
+      {/* Subtle floor spotlight circle */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.84, 0.5]}>
+        <circleGeometry args={[2.5, 32]} />
+        <meshBasicMaterial color="#1a2040" transparent opacity={0.3} depthWrite={false} />
       </mesh>
     </>
   );

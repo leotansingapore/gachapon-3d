@@ -274,8 +274,8 @@ export default function GachaponMachine({
         <Canvas camera={{ position: [0, 1.4, 5], fov: 40 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
           dpr={[1, 1.5]}
           onClick={handleBigShake}>
-          <color attach="background" args={['#111827']} />
-          <fog attach="fog" args={['#111827', 8, 16]} />
+          <color attach="background" args={['#0d1220']} />
+          <fog attach="fog" args={['#0d1220', 7, 14]} />
           <ResponsiveCamera />
           <Suspense fallback={null}>
             <GachaponScene3D
