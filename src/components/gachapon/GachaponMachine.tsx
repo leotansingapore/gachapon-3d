@@ -1,7 +1,16 @@
 'use client';
 
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { useRef, useState, useCallback, useEffect, Suspense, Component, type ReactNode } from 'react';
+
+// Fires callback after first rendered frame (signals 3D is ready)
+function SceneReadyDetector({ onReady }: { onReady: () => void }) {
+  const fired = useRef(false);
+  useFrame(() => {
+    if (!fired.current) { fired.current = true; onReady(); }
+  });
+  return null;
+}
 import { GachaponScene3D } from './Machine3D';
 import { DispensingOverlay, PrizeRevealOverlay, PullHistory } from './Overlays';
 import { playSound, vibrate, setMuted } from './sound';
@@ -90,6 +99,7 @@ export default function GachaponMachine({
   const [tilt, setTilt] = useState({ x: 0, z: 0 });
   const [history, setHistory] = useState<SpinResult[]>([]);
   const [showHistory, setShowHistory] = useState(true);
+  const [sceneReady, setSceneReady] = useState(false);
 
   const ballsRef = useRef<Ball[]>(createBalls(numBalls, palettes, segments.length));
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -227,14 +237,16 @@ export default function GachaponMachine({
               balls={ballsRef.current} shaking={shaking} phase={phase}
               onTurnKnob={handleDispense} tilt={tilt} label={label} priceLabel={priceLabel}
             />
+            <SceneReadyDetector onReady={() => setSceneReady(true)} />
           </Suspense>
         </Canvas>
 
-        {/* Loading overlay (shows while Suspense is pending) */}
-        <div className="absolute inset-0 pointer-events-none" id="gachapon-loading">
-          <LoadingFallback />
-          <style>{`canvas ~ #gachapon-loading { display: none; }`}</style>
-        </div>
+        {/* Loading overlay - hides once scene renders first frame */}
+        {!sceneReady && (
+          <div className="absolute inset-0 pointer-events-none z-20">
+            <LoadingFallback />
+          </div>
+        )}
       </WebGLErrorBoundary>
 
       {/* Sound toggle */}
