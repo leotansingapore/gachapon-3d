@@ -83,7 +83,7 @@ export function DispensingOverlay({ visible, topColor }: { visible: boolean; top
       {/* Capsule ball */}
       <div className="relative z-10" style={{
         width: 140, height: 140,
-        animation: 'gach-drop 1.5s ease-out forwards',
+        animation: 'gach-drop 1.1s ease-out forwards',
       }}>
         <div className="w-full h-full rounded-full" style={{
           background: `radial-gradient(circle at 35% 30%, ${topColor}ff, ${topColor}cc, ${topColor}88)`,
@@ -106,13 +106,13 @@ export function DispensingOverlay({ visible, topColor }: { visible: boolean; top
         <path d="M 15 80 L 35 70 L 50 85 L 68 65 L 80 78 L 92 67 L 110 80 L 125 72 L 145 80"
           fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"
           strokeDasharray="1" strokeDashoffset="1"
-          style={{ animation: 'gach-crack 0.4s 0.9s forwards' }} />
+          style={{ animation: 'gach-crack 0.3s 0.65s forwards' }} />
         <path d="M 68 65 L 62 48 L 68 38" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" opacity={0.6}
           strokeDasharray="1" strokeDashoffset="1"
-          style={{ animation: 'gach-crack 0.3s 1.1s forwards' }} />
+          style={{ animation: 'gach-crack 0.2s 0.8s forwards' }} />
         <path d="M 92 67 L 98 50 L 92 42" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" opacity={0.5}
           strokeDasharray="1" strokeDashoffset="1"
-          style={{ animation: 'gach-crack 0.3s 1.15s forwards' }} />
+          style={{ animation: 'gach-crack 0.2s 0.85s forwards' }} />
       </svg>
 
       {/* Light burst */}
@@ -120,7 +120,7 @@ export function DispensingOverlay({ visible, topColor }: { visible: boolean; top
         style={{
           width: 200, height: 200, left: '50%', top: '50%', marginLeft: -100, marginTop: -100,
           background: `radial-gradient(circle, ${topColor}90, ${topColor}30, transparent 60%)`,
-          animation: 'gach-burst 1.5s ease-out forwards',
+          animation: 'gach-burst 1.1s ease-out forwards',
         }} />
 
       {/* Shadow */}

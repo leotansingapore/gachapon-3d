@@ -178,14 +178,14 @@ export default function GachaponMachine({
       playSound('whoosh');
       setPhase('dispensing');
       vibrate(80);
-    }, 1200);
+    }, 800);
 
     setTimeout(() => {
       playSound('ding');
       setPhase('reveal');
       setShowCollect(true);
       vibrate([50, 100, 50]);
-    }, 2800);
+    }, 2100);
   }, [phase, canDispense, segments, palettes]);
 
   const handleCollect = useCallback(() => {
@@ -217,7 +217,7 @@ export default function GachaponMachine({
     <div className={`relative w-full h-full select-none overflow-hidden ${className}`}>
       <WebGLErrorBoundary fallback={errorFallback}>
         {/* 3D Canvas */}
-        <Canvas shadows camera={{ position: [0, 1.4, 5], fov: 40 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+        <Canvas camera={{ position: [0, 1.4, 5], fov: 40 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
           dpr={[1, 1.5]}
           onClick={handleBigShake}>
           <color attach="background" args={['#111827']} />
