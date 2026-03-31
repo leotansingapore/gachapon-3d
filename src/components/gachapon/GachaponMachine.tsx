@@ -3,10 +3,10 @@
 import { Canvas } from '@react-three/fiber';
 import { useRef, useState, useCallback, useEffect, Suspense, Component, type ReactNode } from 'react';
 import { GachaponScene3D } from './Machine3D';
-import { DispensingOverlay, PrizeRevealOverlay } from './Overlays';
-import { playSound, vibrate, setMuted, isMuted } from './sound';
+import { DispensingOverlay, PrizeRevealOverlay, PullHistory } from './Overlays';
+import { playSound, vibrate, setMuted } from './sound';
 import { createBalls, applyBurst } from './physics';
-import { pickPrize, DEFAULT_SEGMENTS, DEFAULT_PALETTES, type PrizeSegment, type Ball, type GachaponConfig } from './types';
+import { pickPrize, getRarity, DEFAULT_SEGMENTS, DEFAULT_PALETTES, type PrizeSegment, type Ball, type SpinResult } from './types';
 
 // ── Error Boundary ──
 class WebGLErrorBoundary extends Component<
@@ -88,6 +88,8 @@ export default function GachaponMachine({
   const [soundEnabled, setSoundEnabled] = useState(initialSoundEnabled);
   const [motionEnabled, setMotionEnabled] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, z: 0 });
+  const [history, setHistory] = useState<SpinResult[]>([]);
+  const [showHistory, setShowHistory] = useState(true);
 
   const ballsRef = useRef<Ball[]>(createBalls(numBalls, palettes, segments.length));
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -187,11 +189,19 @@ export default function GachaponMachine({
   }, [phase, canDispense, segments, palettes]);
 
   const handleCollect = useCallback(() => {
-    if (prize) onDispense?.(prize);
+    if (prize) {
+      onDispense?.(prize);
+      setHistory(prev => [{
+        segment: prize,
+        rarity: getRarity(prize.creditValue),
+        timestamp: Date.now(),
+        topColor: dispensedColor,
+      }, ...prev].slice(0, 50)); // Keep last 50
+    }
     setPhase('idle');
     setPrize(null);
     setShowCollect(false);
-  }, [prize, onDispense]);
+  }, [prize, onDispense, dispensedColor]);
 
   // ── Keyboard ──
   useEffect(() => {
@@ -277,6 +287,21 @@ export default function GachaponMachine({
           <p className="text-sm animate-pulse" style={{ color: 'rgba(251,191,36,0.7)' }}>Dispensing...</p>
         )}
       </div>
+
+      {/* Pull history */}
+      <PullHistory history={history} visible={showHistory && phase === 'idle' && history.length > 0} />
+
+      {/* History toggle (only shows after first spin) */}
+      {history.length > 0 && phase === 'idle' && (
+        <button
+          onClick={() => setShowHistory(!showHistory)}
+          className="absolute top-14 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-100 z-30"
+          style={{ background: 'rgba(17,24,39,0.7)', color: 'rgba(255,255,255,0.4)', opacity: 0.6 }}
+          title={showHistory ? 'Hide history' : 'Show history'}
+        >
+          {showHistory ? '📋' : '📋'}
+        </button>
+      )}
 
       {/* Overlays */}
       <DispensingOverlay visible={phase === 'dispensing'} topColor={dispensedColor} />

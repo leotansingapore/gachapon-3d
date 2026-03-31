@@ -1,3 +1,5 @@
+export type RarityTier = 'common' | 'rare' | 'epic' | 'legendary';
+
 export interface PrizeSegment {
   id: string;
   label: string;
@@ -5,6 +7,35 @@ export interface PrizeSegment {
   weight: number;
   emoji: string;
 }
+
+export interface SpinResult {
+  segment: PrizeSegment;
+  rarity: RarityTier;
+  timestamp: number;
+  topColor: string;
+}
+
+// Determine rarity tier based on credit value
+export function getRarity(creditValue: number): RarityTier {
+  if (creditValue >= 21) return 'legendary';
+  if (creditValue >= 15) return 'epic';
+  if (creditValue >= 9) return 'rare';
+  return 'common';
+}
+
+// Visual config per rarity tier
+export const RARITY_CONFIG: Record<RarityTier, {
+  color: string;
+  glowColor: string;
+  confettiCount: number;
+  screenShake: boolean;
+  label: string;
+}> = {
+  common:    { color: '#9ca3af', glowColor: '#9ca3af', confettiCount: 20, screenShake: false, label: 'Common' },
+  rare:      { color: '#3b82f6', glowColor: '#60a5fa', confettiCount: 35, screenShake: false, label: 'Rare' },
+  epic:      { color: '#a855f7', glowColor: '#c084fc', confettiCount: 50, screenShake: true,  label: 'Epic!' },
+  legendary: { color: '#f59e0b', glowColor: '#fbbf24', confettiCount: 70, screenShake: true,  label: 'LEGENDARY!' },
+};
 
 export interface Ball {
   position: { x: number; y: number; z: number };
