@@ -1,7 +1,8 @@
 'use client';
 
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useRef, useState, useCallback, useEffect, Suspense, Component, type ReactNode } from 'react';
+import * as THREE from 'three';
 
 // Fires callback after first rendered frame (signals 3D is ready)
 function SceneReadyDetector({ onReady }: { onReady: () => void }) {
@@ -9,6 +10,34 @@ function SceneReadyDetector({ onReady }: { onReady: () => void }) {
   useFrame(() => {
     if (!fired.current) { fired.current = true; onReady(); }
   });
+  return null;
+}
+
+// Adjusts camera for portrait/landscape to fit the full machine
+function ResponsiveCamera() {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    const aspect = size.width / size.height;
+    const cam = camera as THREE.PerspectiveCamera;
+    if (aspect < 0.55) {
+      // Very tall portrait (phone with browser chrome)
+      cam.position.set(0, 0.9, 7.5);
+      cam.fov = 44;
+    } else if (aspect < 0.7) {
+      // Standard phone portrait
+      cam.position.set(0, 1.0, 6.8);
+      cam.fov = 42;
+    } else if (aspect < 0.85) {
+      // Tablet portrait
+      cam.position.set(0, 1.2, 5.5);
+      cam.fov = 40;
+    } else {
+      // Landscape / desktop
+      cam.position.set(0, 1.4, 5);
+      cam.fov = 40;
+    }
+    cam.updateProjectionMatrix();
+  }, [camera, size]);
   return null;
 }
 import { GachaponScene3D } from './Machine3D';
@@ -247,6 +276,7 @@ export default function GachaponMachine({
           onClick={handleBigShake}>
           <color attach="background" args={['#111827']} />
           <fog attach="fog" args={['#111827', 8, 16]} />
+          <ResponsiveCamera />
           <Suspense fallback={null}>
             <GachaponScene3D
               balls={ballsRef.current} shaking={shaking} phase={phase}
