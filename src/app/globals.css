@@ -19,11 +19,28 @@ body {
   background: var(--bg-dark);
   color: white;
   font-family: system-ui, -apple-system, sans-serif;
-  overflow-x: hidden;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
+  touch-action: manipulation;
 }
 
 html, body, #__next {
   height: 100%;
+  overflow: hidden;
+}
+
+/* Fix mobile viewport height (100vh includes hidden browser chrome) */
+.h-real-screen {
+  height: 100vh;
+  height: 100dvh; /* dynamic viewport height - respects mobile browser chrome */
+}
+
+/* Prevent any scroll/bounce on mobile */
+html {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
 }
 
 @keyframes float {

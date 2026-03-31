@@ -7,7 +7,7 @@ import type { PrizeSegment } from '@/components/gachapon';
 const GachaponMachine = dynamic(
   () => import('@/components/gachapon/GachaponMachine'),
   { ssr: false, loading: () => (
-    <div className="w-full h-screen flex items-center justify-center" style={{ background: '#111827' }}>
+    <div className="w-full h-real-screen flex items-center justify-center" style={{ background: '#111827' }}>
       <div className="text-center">
         <div className="w-12 h-12 rounded-full mx-auto mb-3 animate-spin"
           style={{ border: '3px solid rgba(251,191,36,0.1)', borderTop: '3px solid rgba(251,191,36,0.6)' }} />
@@ -27,7 +27,7 @@ export default function Home() {
   };
 
   return (
-    <div className="relative w-full h-screen">
+    <div className="relative w-full h-real-screen">
       <GachaponMachine
         onDispense={handleDispense}
         className="w-full h-full"
