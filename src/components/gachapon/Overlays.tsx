@@ -266,7 +266,7 @@ export function PullHistory({ history, visible }: {
   if (!visible || history.length === 0) return null;
 
   return (
-    <div className="absolute top-4 right-14 z-30 pointer-events-auto">
+    <div className="absolute top-16 right-4 z-30 pointer-events-auto">
       <div className="rounded-xl overflow-hidden" style={{
         background: 'rgba(17,24,39,0.92)',
         border: '1px solid rgba(255,255,255,0.06)',

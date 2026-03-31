@@ -295,29 +295,41 @@ export default function GachaponMachine({
         )}
       </WebGLErrorBoundary>
 
-      {/* Sound toggle */}
-      <button
-        onClick={() => setSoundEnabled(!soundEnabled)}
-        className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-100"
-        style={{ background: 'rgba(17,24,39,0.7)', color: 'rgba(255,255,255,0.4)', opacity: 0.6 }}
-        title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
-      >
-        {soundEnabled ? '🔊' : '🔇'}
-      </button>
+      {/* Top-right controls */}
+      <div className="absolute top-4 right-4 flex flex-col gap-2 z-30">
+        <button
+          onClick={() => setSoundEnabled(!soundEnabled)}
+          className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-100"
+          style={{ background: 'rgba(17,24,39,0.7)', color: 'rgba(255,255,255,0.4)', opacity: 0.6 }}
+          title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
+        >
+          {soundEnabled ? '🔊' : '🔇'}
+        </button>
+        {history.length > 0 && phase === 'idle' && (
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-100"
+            style={{ background: 'rgba(17,24,39,0.7)', color: 'rgba(255,255,255,0.4)', opacity: showHistory ? 0.8 : 0.4 }}
+            title={showHistory ? 'Hide history' : 'Show history'}
+          >
+            📋
+          </button>
+        )}
+      </div>
 
       {/* Bottom controls */}
-      <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center gap-3 pointer-events-none">
+      <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2 pointer-events-none">
         {phase === 'idle' && (
           <>
-            <div className="flex gap-3 mb-2">
+            <div className="flex gap-2 mb-1">
               <button onClick={(e) => { e.stopPropagation(); handleBigShake(); }}
-                className="pointer-events-auto px-6 py-2.5 rounded-full transition-all duration-200 hover:brightness-125 active:scale-95"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', fontWeight: 600 }}>
+                className="pointer-events-auto px-5 py-2 rounded-full transition-all duration-200 hover:brightness-125 active:scale-95"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.45)', fontSize: '0.8rem', fontWeight: 600 }}>
                 Randomize
               </button>
             </div>
-            <p className="text-[10px] tracking-wider" style={{ color: 'rgba(255,255,255,0.18)' }}>
-              {motionEnabled ? 'Shake your phone to randomize' : 'SPACE to randomize -- Drag to orbit'}
+            <p className="text-[9px] tracking-wider mb-0.5" style={{ color: 'rgba(255,255,255,0.15)' }}>
+              {motionEnabled ? 'Shake phone to randomize' : 'SPACE = randomize / Drag = orbit'}
             </p>
             {!motionEnabled && typeof window !== 'undefined' && 'ontouchstart' in window && (
               <button onClick={requestMotion} className="pointer-events-auto px-4 py-1.5 rounded-full text-[11px] mb-1"
@@ -327,7 +339,7 @@ export default function GachaponMachine({
             )}
             <button onClick={(e) => { e.stopPropagation(); handleDispense(); }}
               disabled={!canDispense}
-              className={`pointer-events-auto px-8 py-3.5 rounded-full transition-all duration-200 ${canDispense ? 'hover:brightness-125 active:scale-95 hover:shadow-lg' : 'opacity-40 cursor-not-allowed'}`}
+              className={`pointer-events-auto px-7 py-3 rounded-full transition-all duration-200 ${canDispense ? 'hover:brightness-125 active:scale-95 hover:shadow-lg' : 'opacity-40 cursor-not-allowed'}`}
               style={{
                 background: canDispense ? 'linear-gradient(135deg, rgba(220,38,38,0.2), rgba(220,38,38,0.08))' : 'rgba(255,255,255,0.03)',
                 border: `1px solid ${canDispense ? 'rgba(220,38,38,0.4)' : 'rgba(255,255,255,0.06)'}`,
@@ -352,17 +364,7 @@ export default function GachaponMachine({
       {/* Pull history */}
       <PullHistory history={history} visible={showHistory && phase === 'idle' && history.length > 0} />
 
-      {/* History toggle (only shows after first spin) */}
-      {history.length > 0 && phase === 'idle' && (
-        <button
-          onClick={() => setShowHistory(!showHistory)}
-          className="absolute top-14 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-100 z-30"
-          style={{ background: 'rgba(17,24,39,0.7)', color: 'rgba(255,255,255,0.4)', opacity: 0.6 }}
-          title={showHistory ? 'Hide history' : 'Show history'}
-        >
-          {showHistory ? '📋' : '📋'}
-        </button>
-      )}
+      {/* (history toggle moved to top-right controls group) */}
 
       {/* Overlays */}
       <DispensingOverlay visible={phase === 'dispensing'} topColor={dispensedColor} />
