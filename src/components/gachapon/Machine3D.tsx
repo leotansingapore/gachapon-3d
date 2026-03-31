@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Environment, Text, ContactShadows, OrbitControls } from '@react-three/drei';
+import { Text, ContactShadows, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Ball } from './types';
 import { simulate, applyOrbitForce } from './physics';
@@ -19,11 +19,11 @@ function CapsuleMesh({ ball }: { ball: Ball }) {
     <group ref={groupRef}>
       <mesh castShadow>
         <sphereGeometry args={[ball.radius, 20, 20, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshPhysicalMaterial color={ball.topColor} roughness={0.2} clearcoat={0.8} clearcoatRoughness={0.05} envMapIntensity={1.5} />
+        <meshPhysicalMaterial color={ball.topColor} roughness={0.2} clearcoat={0.8} clearcoatRoughness={0.05} envMapIntensity={0.8} />
       </mesh>
       <mesh castShadow>
         <sphereGeometry args={[ball.radius, 20, 20, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
-        <meshPhysicalMaterial color={ball.bottomColor} roughness={0.2} clearcoat={0.8} clearcoatRoughness={0.05} envMapIntensity={1.5} />
+        <meshPhysicalMaterial color={ball.bottomColor} roughness={0.2} clearcoat={0.8} clearcoatRoughness={0.05} envMapIntensity={0.8} />
       </mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[ball.radius * 0.99, 0.003, 6, 24]} />
@@ -44,16 +44,16 @@ function GlassDome() {
   return (
     <group position={[0, 0.48, 0]}>
       <mesh renderOrder={1}>
-        <sphereGeometry args={[1.4, 64, 64, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
+        <sphereGeometry args={[1.4, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
         <meshPhysicalMaterial
           color="#e8f0ff" roughness={0.0} transparent opacity={0.12}
-          envMapIntensity={2.5} clearcoat={1} clearcoatRoughness={0}
+          envMapIntensity={1.0} clearcoat={1} clearcoatRoughness={0}
           side={THREE.DoubleSide} depthWrite={false} ior={1.52}
           specularIntensity={1.5} specularColor="#ffffff"
         />
       </mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.38, 0.015, 8, 64]} />
+        <torusGeometry args={[1.38, 0.015, 8, 32]} />
         <meshBasicMaterial color="white" opacity={0.06} transparent />
       </mesh>
       {/* Glass reflections */}
@@ -218,12 +218,16 @@ export function GachaponScene3D({ balls, shaking, phase, onTurnKnob, tilt, label
   return (
     <>
       <ambientLight intensity={0.4} />
-      <directionalLight position={[4, 6, 5]} intensity={1.5} castShadow shadow-mapSize={[1024, 1024]} color="#fff5e6" />
+      <directionalLight position={[4, 6, 5]} intensity={1.5} castShadow shadow-mapSize={[512, 512]} color="#fff5e6" />
       <pointLight position={[-3, 4, 2]} intensity={0.4} color="#93c5fd" />
       <pointLight position={[3, 2, 3]} intensity={0.3} color="#fde68a" />
       <spotLight position={[0, 5, 3]} angle={0.4} penumbra={0.6} intensity={2} castShadow />
       <pointLight position={[0, 0.6, 0]} intensity={0.3} color="#ffffff" distance={2} />
-      <Environment preset="studio" />
+      {/* Hemisphere light replaces HDR environment (no download needed) */}
+      <hemisphereLight args={['#b0c4de', '#2a2a3a', 0.8]} />
+      {/* Additional fill lights for reflections on glossy materials */}
+      <pointLight position={[0, 3, -2]} intensity={0.4} color="#e0e8f0" />
+      <pointLight position={[-3, 1, -1]} intensity={0.2} color="#d0d8e8" />
       <OrbitControls enablePan={false} enableZoom={false}
         minPolarAngle={Math.PI * 0.25} maxPolarAngle={Math.PI * 0.55}
         minAzimuthAngle={-Math.PI * 0.25} maxAzimuthAngle={Math.PI * 0.25}

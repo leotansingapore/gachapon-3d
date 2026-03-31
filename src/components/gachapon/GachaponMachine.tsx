@@ -207,7 +207,8 @@ export default function GachaponMachine({
     <div className={`relative w-full h-full select-none overflow-hidden ${className}`}>
       <WebGLErrorBoundary fallback={errorFallback}>
         {/* 3D Canvas */}
-        <Canvas shadows camera={{ position: [0, 1.4, 5], fov: 40 }} gl={{ antialias: true, alpha: false }}
+        <Canvas shadows camera={{ position: [0, 1.4, 5], fov: 40 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+          dpr={[1, 1.5]}
           onClick={handleBigShake}>
           <color attach="background" args={['#111827']} />
           <fog attach="fog" args={['#111827', 8, 16]} />
